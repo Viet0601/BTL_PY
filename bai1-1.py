@@ -1,9 +1,12 @@
+import re
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 import pandas as pd
 from bs4 import BeautifulSoup
 import time
+import unicodedata
 from selenium.webdriver.support import expected_conditions as EC
 import uuid
 from webdriver_manager.chrome import ChromeDriverManager
@@ -11,6 +14,74 @@ from selenium.webdriver.support.ui import WebDriverWait
 import os
 import sqlite3
 from selenium.webdriver.chrome.options import Options
+def slugify_name(name):
+    """
+    Chuyển tên cầu thủ thành dạng URL (slug) cho footballtransfers.com
+    Ví dụ:
+      João Félix -> joao-felix
+      Thiago Alcântara -> thiago-alcantara
+      Pierre-Emerick Aubameyang -> pierre-emerick-aubameyang
+    """
+    name = unicodedata.normalize('NFD', name)
+    name = name.encode('ascii', 'ignore').decode('utf-8')
+    name = name.lower().strip()
+    name = re.sub(r'[\s_]+', '-', name)
+    name = re.sub(r'[^a-z0-9\-]', '', name)
+    name = name.strip('-')
+    return name
+
+# ------------------------------
+# 🔹 KIỂM TRA LINK CẦU THỦ CÓ TỒN TẠI KHÔNG
+# ------------------------------
+def url_exists(url):
+    try:
+        r = requests.head(url, allow_redirects=True, timeout=5)
+        return r.status_code == 200
+    except:
+        return False
+
+
+# ------------------------------
+# 🔹 HÀM CRAWL DỮ LIỆU TỪ TRANG CÁ NHÂN CẦU THỦ
+# ------------------------------
+def extract_player_page_data(browser, player_url):
+    """Lấy dữ liệu từ trang cá nhân của cầu thủ trên footballtransfers.com"""
+    try:
+        if not url_exists(player_url):
+            return {"market_value": "N/A", "rating": "N/A"}
+
+        browser.get(player_url)
+        WebDriverWait(browser, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '.player-tag'))
+        )
+        html_content = browser.page_source
+        soup = BeautifulSoup(html_content, 'lxml')
+
+        # 🏷️ Giá trị chuyển nhượng
+        value_elem = soup.select_one('span.player-tag')
+        market_value = value_elem.get_text(strip=True) if value_elem else "N/A"
+
+        # 📊 Kỹ năng & tiềm năng
+        skill_elem = soup.select_one('div.teamInfoTop-skill__skill')
+        pot_elem = soup.select_one('div.teamInfoTop-skill__pot')
+
+        def extract_number(text):
+            match = re.search(r'(\d+(\.\d+)?)', text)
+            return float(match.group(1)) if match else None
+
+        skill = extract_number(skill_elem.get_text(strip=True)) if skill_elem else None
+        pot = extract_number(pot_elem.get_text(strip=True)) if pot_elem else None
+        rating = f"{skill}/{pot}" if skill and pot else "N/A"
+
+        return {
+            "market_value": market_value,
+            "rating": rating
+        }
+
+    except Exception as e:
+        print(f"⚠️ Không thể lấy dữ liệu từ {player_url}: {e}")
+        return {"market_value": "N/A", "rating": "N/A"}
+
 
 LINKS_URL_TO_CRAWL = {
     'Standard Stats': ('https://fbref.com/en/comps/9/2024-2025/stats/2024-2025-Premier-League-Stats', 'stats_standard'),
@@ -579,55 +650,6 @@ def initialize_browser():
     )
     browser.implicitly_wait(10)
     return browser
-
-# ------------------------ 2. Lấy dữ liệu từ 1 trang -------------------------
-def extract_page_data(browser, page_url):
-    try:
-        browser.get(page_url)
-        WebDriverWait(browser, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'table.table-striped.leaguetable'))
-        )
-        html_content = browser.page_source
-        soup = BeautifulSoup(html_content, 'lxml')
-
-        table = soup.select_one('table.table.table-striped.leaguetable')
-        if not table:
-            return []
-
-        rows = table.select('tbody tr')
-        extracted_data = []
-
-        for row in rows:
-            try:
-                name_elem = row.select_one('span.d-none')
-                team_elem = row.select_one('span.td-team__teamname')
-                value_elem = row.select_one('span.player-tag')
-                skill_elem = row.select_one('div.table-skill__skill')
-                pot_elem = row.select_one('div.table-skill__pot')
-
-                player_name = name_elem.get_text(strip=True) if name_elem else None
-                club = team_elem.get_text(strip=True) if team_elem else None
-                value = value_elem.get_text(strip=True) if value_elem else "N/A"
-
-                skill = float(skill_elem.get_text(strip=True)) if skill_elem else None
-                pot = float(pot_elem.get_text(strip=True)) if pot_elem else None
-                rating = f"{skill}/{pot}" if skill is not None and pot is not None else "N/A"
-
-                if player_name:
-                    extracted_data.append({
-                        "player": player_name.strip(),
-                        "club": club,
-                        "market_value": value,
-                        "rating": rating
-                    })
-            except:
-                continue
-
-        return extracted_data
-    except Exception as e:
-        print(f"❌ Lỗi khi xử lý {page_url}: {e}")
-        return []
-
 # ------------------------ 3. Tạo bảng chuyển nhượng -------------------------
 def create_transfer_table(conn):
     conn.execute("""
@@ -662,133 +684,96 @@ def get_all_players_from_db(db_path):
     return [{'name': name, 'team': team} for name, team in players]
 
 
-# ------------------------ 6. Tìm giá trị chuyển nhượng và lưu -------------------------
-# def update_transfer_values_to_db(db_path='premier_league_stats.db'):
-#     all_players_raw = get_all_players_from_db(db_path)
-    
-#     # 🧠 Tạo key duy nhất cho từng cầu thủ: name::team
-#     name_map = {}
-#     found_map = {}
-#     for player in all_players_raw:
-#         key = f"{player['name'].strip().lower()}::{player['team'].strip().lower()}"
-#         name_map[key] = player
-#         found_map[key] = False
+def extract_page_data(browser, page_url):
+    """Lấy danh sách cầu thủ từ 1 trang Premier League"""
+    try:
+        browser.get(page_url)
+        WebDriverWait(browser, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'table.table-striped.leaguetable'))
+        )
+        html_content = browser.page_source
+        soup = BeautifulSoup(html_content, 'lxml')
 
-#     print(f"🔍 Tổng số cầu thủ cần xử lý (name+team unique): {len(name_map)}")
+        table = soup.select_one('table.table.table-striped.leaguetable')
+        if not table:
+            return []
 
-#     collected = []
-#     browser = initialize_browser()
-#     base_url = "https://www.footballtransfers.com/en/players/uk-premier-league"
+        rows = table.select('tbody tr')
+        extracted_data = []
 
-#     try:
-#         for page in range(1, 23):
-#             page_url = base_url if page == 1 else f"{base_url}/{page}"
-#             print(f"🌍 Crawling page {page}...")
-#             data = extract_page_data(browser, page_url)
+        for row in rows:
+            try:
+                name_elem = row.select_one('a[href*="/players/"]')
+                team_elem = row.select_one('span.td-team__teamname')
+                value_elem = row.select_one('span.player-tag')
+                skill_elem = row.select_one('div.table-skill__skill')
+                pot_elem = row.select_one('div.table-skill__pot')
 
-#             for player in data:
-#                 name_lower = player['player'].strip().lower()
-#                 club_lower = player['club'].strip().lower()
-#                 key = f"{name_lower}::{club_lower}"
-#                 print(player)
-#                 if key in name_map and not found_map[key]:
-#                     found_map[key] = True
-#                     original = name_map[key]
-#                     collected.append({
-#                         'player': original['name'],  # giữ tên gốc (có viết hoa, dấu cách)
-#                         'club': original['team'],
-#                         'market_value': player.get('market_value', 'N/A'),
-#                         'rating': player.get('rating', 'N/A')
-#                     })
-#             time.sleep(1)
+                player_name = name_elem.get_text(strip=True) if name_elem else None
+                player_link = name_elem['href'] if name_elem and name_elem.has_attr('href') else None
+                club = team_elem.get_text(strip=True) if team_elem else None
+                value = value_elem.get_text(strip=True) if value_elem else "N/A"
 
-#     finally:
-#         browser.quit()
+                def extract_num(text):
+                    match = re.search(r'(\d+(\.\d+)?)', text)
+                    return float(match.group(1)) if match else None
 
-#     # 🧩 Thêm các cầu thủ không tìm thấy
-#     not_found_count = 0
-#     for key, was_found in found_map.items():
-#         if not was_found:
-#             not_found_count += 1
-#             p = name_map[key]
-#             collected.append({
-#                 'player': p['name'],
-#                 'club': p['team'],
-#                 'market_value': 'N/A',
-#                 'rating': 'N/A'
-#             })
+                skill = extract_num(skill_elem.get_text(strip=True)) if skill_elem else None
+                pot = extract_num(pot_elem.get_text(strip=True)) if pot_elem else None
+                rating = f"{skill}/{pot}" if skill and pot else "N/A"
 
-#     print(f"⚠️ Cầu thủ không tìm thấy: {not_found_count}")
+                if player_name:
+                    extracted_data.append({
+                        "player": player_name.strip(),
+                        "club": club,
+                        "market_value": value,
+                        "rating": rating,
+                        "link": player_link
+                    })
+            except Exception as e:
+                print(f"⚠️ Lỗi đọc hàng: {e}")
+                continue
 
-#     # ✅ Ghi dữ liệu vào DB
-#     conn = sqlite3.connect(db_path)
-#     create_transfer_table(conn)
-#     insert_transfer_data(conn, collected)
-#     conn.close()
+        return extracted_data
 
-#     print(f"✅ Đã lưu {len(collected)} cầu thủ vào bảng 'player_transfers' trong {db_path}")
+    except Exception as e:
+        print(f"❌ Lỗi khi xử lý {page_url}: {e}")
+        return []
 
 
+# ------------------------------
+# 🔹 CẬP NHẬT DỮ LIỆU VÀO DATABASE
+# ------------------------------
 def update_transfer_values_to_db(db_path='premier_league_stats.db'):
     all_players_raw = get_all_players_from_db(db_path)
 
-    # 🧠 Tạo key duy nhất cho từng cầu thủ: name::team
     name_map = {}
     found_map = {}
-    team_name_db=set()
+
     for player in all_players_raw:
-        team_name_db.add(player['team'])
-        key = f"{player['name'].strip().lower()}::{player['team'].strip().lower()}"
+        key = player['name'].strip().lower()
         name_map[key] = player
         found_map[key] = False
 
-    print(f"🔍 Tổng số cầu thủ cần xử lý (name+team unique): {len(name_map)}")
-    print(team_name_db)
-    # ✅ Map các alias tên đội bóng từ web về đúng trong DB
-    club_alias_map = {
-    'man city': 'manchester city',
-    'man utd': 'manchester utd',
-    'c. palace': 'crystal palace',
-    'tottenham': 'tottenham',
-    'brighton': 'brighton',
-    "b'mouth": 'bournemouth',
-    'wolves': 'wolves',
-    'west ham': 'west ham',
-    'arsenal': 'arsenal',
-    'aston villa': 'aston villa',
-    'chelsea': 'chelsea',
-    'liverpool': 'liverpool',
-    'brentford': 'brentford',
-    'everton': 'everton',
-    'newcastle': 'newcastle utd',
-    'fulham': 'fulham',
-    'nottingham': "nott'ham forest",
-
-    
-    'sunderland': None,
-    }
+    print(f"🔍 Tổng số cầu thủ trong DB: {len(name_map)}")
 
     collected = []
     browser = initialize_browser()
     base_url = "https://www.footballtransfers.com/en/players/uk-premier-league"
-    team_name=set()
+
     try:
+        # ---- 1️⃣ Crawl 22 trang Premier League ----
         for page in range(1, 23):
             page_url = base_url if page == 1 else f"{base_url}/{page}"
             print(f"🌍 Crawling page {page}...")
             data = extract_page_data(browser, page_url)
 
             for player in data:
-                team_name.add(player['club'])
                 name_lower = player['player'].strip().lower()
-                club_lower_raw = player['club'].strip().lower()
-                club_normalized = club_alias_map.get(club_lower_raw, club_lower_raw)
 
-                key = f"{name_lower}::{club_normalized}"
-
-                if key in name_map and not found_map[key]:
-                    found_map[key] = True
-                    original = name_map[key]
+                if name_lower in name_map and not found_map[name_lower]:
+                    found_map[name_lower] = True
+                    original = name_map[name_lower]
                     collected.append({
                         'player': original['name'],
                         'club': original['team'],
@@ -796,34 +781,38 @@ def update_transfer_values_to_db(db_path='premier_league_stats.db'):
                         'rating': player.get('rating', 'N/A')
                     })
             time.sleep(1)
+
+        # ---- 2️⃣ Cầu thủ không tìm thấy -> crawl từ trang cá nhân ----
+        not_found_count = 0
+        for key, was_found in found_map.items():
+            if not was_found:
+                not_found_count += 1
+                p = name_map[key]
+                slug = slugify_name(p['name'])
+                player_url = f"https://www.footballtransfers.com/en/players/{slug}"
+                print(f"🔎 Tìm thêm: {p['name']} → {player_url}")
+
+                extra_data = extract_player_page_data(browser, player_url)
+                collected.append({
+                    'player': p['name'],
+                    'club': p['team'],
+                    'market_value': extra_data['market_value'],
+                    'rating': extra_data['rating']
+                })
+                time.sleep(1)
+
+        print(f"⚠️ Cầu thủ không có trong 22 trang: {not_found_count}")
+
     finally:
         browser.quit()
 
-    # 🧩 Thêm các cầu thủ không tìm thấy
-    print(team_name)
-    not_found_count = 0
-    for key, was_found in found_map.items():
-        if not was_found:
-            not_found_count += 1
-            p = name_map[key]
-            collected.append({
-                'player': p['name'],
-                'club': p['team'],
-                'market_value': 'N/A',
-                'rating': 'N/A'
-            })
-
-    print(f"⚠️ Cầu thủ không tìm thấy: {not_found_count}")
-
-    # ✅ Ghi dữ liệu vào DB
+    # ✅ Ghi vào SQLite
     conn = sqlite3.connect(db_path)
     create_transfer_table(conn)
     insert_transfer_data(conn, collected)
     conn.close()
 
     print(f"✅ Đã lưu {len(collected)} cầu thủ vào bảng 'player_transfers' trong {db_path}")
-
-
 
 # ------------------------ 7. Chạy hàm chính -------------------------
 
