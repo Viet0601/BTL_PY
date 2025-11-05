@@ -14,22 +14,97 @@ from selenium.webdriver.support.ui import WebDriverWait
 import os
 import sqlite3
 from selenium.webdriver.chrome.options import Options
-def slugify_name(name):
-    """
-    Chuyển tên cầu thủ thành dạng URL (slug) cho footballtransfers.com
-    Ví dụ:
-      João Félix -> joao-felix
-      Thiago Alcântara -> thiago-alcantara
-      Pierre-Emerick Aubameyang -> pierre-emerick-aubameyang
-    """
-    name = unicodedata.normalize('NFD', name)
-    name = name.encode('ascii', 'ignore').decode('utf-8')
-    name = name.lower().strip()
-    name = re.sub(r'[\s_]+', '-', name)
-    name = re.sub(r'[^a-z0-9\-]', '', name)
-    name = name.strip('-')
-    return name
+import re
+import unicodedata
+EXCEPTIONS_SLUG = {
+    "Romain Esse":"romain-esse-1",
+    "Solly March":"solomon-march",
+    "Kyle Walker-Peters":"kyle-walkerpeters",
+    "Hákon Valdimarsson":"hakon-rafn-valdimarsson",
+    "Solly March":"solomon-march",
+    "Albert Grønbaek": "albert-gronbak",
+    "Antony": "antony-matheus-dos-santos",
+    "Armel Bella Kotchap": "armel-bellakotchup",
+    "Ben Johnson":"benjamin-johnson",
+    "Bilal El Khannouss":"bilal-el-khannous",
+    "Bobby De Cordova-Reid":"bobby-decordovareid",
+    "Caleb Okoli":"memeh-caleb-okoli",
+    "Danny Ings":"daniel-william-john-ings",
+    "Darwin Núñez":"darwin-gabriel-nunez-ribeiro",
+    "Edmond-Paris Maghoma":"edmondparis-maghoma",
+    "Emi Buendía":"emiliano-buendia",
+    "Fabio Carvalho":"fabio-carvalho-3",
+    "Ferdi Kadioglu":"ferdi-erenay-kadioglu",
+    "Harry Clarke":"harrison-clarke",
+    "Hwang Hee-chan":"heechan-hwang",
+    "Jack Clarke":"jack-clarke-1",
+    "Jack Taylor":"jack-taylor-1",
+    "Jaden Philogene Bidace":"jaden-philogenebidace",
+    "Jahmai Simpson-Pusey":"jahmai-simpsonpusey",
+    "Jakub Kiwior":"jakub-piotr-kiwior",
+    "Jens Cajuste":"jenslys-michel-cajuste",
+"Jesper Lindstrøm":"jesper-grange-lindstrom",
+"Joe Aribo":"joseph-oluwaseyi-temitope-ayodelearibo",
+"Julian Araujo":"julian-vincente-araujo",
+"Julio Enciso":"julio-cesar-enciso",
+"Jáder Durán":"jhon-jader-duran-palacio",
+"Jørgen Strand Larsen":"jorgen-strand-strand-larsen",
+"Kamaldeen Sulemana":"kamal-deen-sulemana",
+"Kostas Tsimikas":"konstantinos-tsimikas",
+"Luis Díaz":"luis-fernando-diaz-marulanda",
+"Mads Roerslev":"mads-roerslev-rasmussen",
+"Manuel Akanji":"manuel-obafemi-akanji",
+"Matt O'Riley":"matthew-oriley",
+"Max Kilman":"maximilian-kilman",
+"Miguel Almirón":"miguel-angel-almiron-rejala",
+"Mykhailo Mudryk":"mykhaylo-mudryk",
+"Nicolas Jackson":"nicolas-jackson-1",
+"Nélson Semedo":"nelsinho-1",
+"Pervis Estupiñán":"pervis-josue-estupinan-tenorio",
+"Ramón Sosa":"ramon-sosa-acosta",
+"Rasmus Højlund":"rasmus-winther-hojlund",
+"Renato Veiga":"renato-palma-veiga",
+"Ricardo Pereira":"ricardo-pereira-1",
 
+"Sam Morsy":"samy-morsy",
+"Sammie Szmodics":"samuel-szmodics",
+"Son Heung-min":"heungmin-son",
+"Tommy Doyle":"thomas-doyle-1",
+"Toti Gomes":"toti-antonio-gomes",
+"Trent Alexander-Arnold":"trent-alexanderarnold",
+"Victor Bernth Kristiansen":"victor-kristiansen",
+"Welington":"welington-damascena",
+"William Smallbone":"william-anthony-patrick-smallbone",
+"Yehor Yarmoliuk":"yegor-yarmolyuk"
+
+    # ... thêm các trường hợp đặc biệt khác
+}
+def slugify_name(name: str) -> str:
+    import re, unicodedata
+
+    name = name.strip().lower()
+    replacements = {
+        'ø': 'o', 'œ': 'oe', 'æ': 'ae', 'å': 'a', 'ä': 'a',
+        'á':'a','à':'a','â':'a','ã':'a','č':'c','ć':'c','ç':'c',
+        'é':'e','è':'e','ê':'e','ë':'e',
+        'í':'i','ì':'i','î':'i','ï':'i',
+        'ñ':'n','ó':'o','ò':'o','ô':'o','õ':'o','ö':'o',
+        'ú':'u','ù':'u','û':'u','ü':'u','ß':'ss','š':'s','ž':'z','ý':'y','ÿ':'y'
+    }
+    for src, target in replacements.items():
+        name = name.replace(src, target)
+    name = unicodedata.normalize('NFD', name)
+    name = name.encode('ascii','ignore').decode('utf-8')
+    name = re.sub(r'[\s_]+','-',name)
+    name = re.sub(r'[^a-z0-9\-]','',name)
+    return name.strip('-')
+
+def get_player_slug(name: str) -> str:
+    # Nếu có ngoại lệ, dùng slug thủ công
+    if name in EXCEPTIONS_SLUG:
+        return EXCEPTIONS_SLUG[name]
+    # Nếu không, dùng hàm chuẩn
+    return slugify_name(name)
 # ------------------------------
 # 🔹 KIỂM TRA LINK CẦU THỦ CÓ TỒN TẠI KHÔNG
 # ------------------------------
@@ -788,7 +863,8 @@ def update_transfer_values_to_db(db_path='premier_league_stats.db'):
             if not was_found:
                 not_found_count += 1
                 p = name_map[key]
-                slug = slugify_name(p['name'])
+                # slug = slugify_name(p['name'])
+                slug = get_player_slug(p['name'])
                 player_url = f"https://www.footballtransfers.com/en/players/{slug}"
                 print(f"🔎 Tìm thêm: {p['name']} → {player_url}")
 
