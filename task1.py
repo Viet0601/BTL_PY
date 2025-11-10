@@ -17,6 +17,16 @@ from selenium.webdriver.chrome.options import Options
 import re
 import unicodedata
 EXCEPTIONS_SLUG = {
+    "Jota Silva":"joao-pedro-ferreira-silva",
+    "Diego Gómez":"diego-gomez-19",
+    "Marc Cucurella":"marc-cucurella-saseta",
+    "Nathan Wood-Gordon":"nathan-wood",
+    "Ezri Konsa":"ezri-konsa-ngoyo",
+    "Gabriel Martinelli":"gabriel-martinelli-1",
+    "Idrissa Gana Gueye":"idrissa-gueye",
+    "Joelinton":"joelinton-cassio-joelinton",
+    "Ben White":"ben-white-1",
+    "Antonee Robinson":"antonee-robinson-1",
     "Romain Esse":"romain-esse-1",
     "Solly March":"solomon-march",
     "Kyle Walker-Peters":"kyle-walkerpeters",
@@ -168,23 +178,63 @@ LINKS_URL_TO_CRAWL = {
 
     'Possession': ('https://fbref.com/en/comps/9/2024-2025/possession/2024-2025-Premier-League-Stats', 'stats_possession'),
     'Miscellaneous': ('https://fbref.com/en/comps/9/2024-2025/misc/2024-2025-Premier-League-Stats', 'stats_misc'),
-    'Goalkeeping': ('https://fbref.com/en/comps/9/2024-2025/keepers/2024-2025-Premier-League-Stats', 'stats_keeper')
+    'Goalkeeping': ('https://fbref.com/en/comps/9/2024-2025/keepers/2024-2025-Premier-League-Stats', 'stats_keeper'),
+    'Advanced Goalkeeping': ('https://fbref.com/en/comps/9/2024-2025/keepersadv/2024-2025-Premier-League-Stats', 'stats_keeper_adv'),
+    'Passing Type': ('https://fbref.com/en/comps/9/2024-2025/passing_types/2024-2025-Premier-League-Stats', 'stats_passing_types'),
+    'Playing Time': ('https://fbref.com/en/comps/9/2024-2025/playingtime/2024-2025-Premier-League-Stats', 'stats_playing_time')
 }
 PLAYER_KEY_TO_CRAWL = [
-    'name', 'nationality', 'position', 'team', 'age', 'games', 'games_starts',
-    'minutes', 'goals', 'assist', 'cards_yellow', 'cards_red', 'xg', 'xg_assist',
+    
+    'name', 'nationality', 'position', 'team', 'age','born', 'games', 'games_starts',
+    'minutes','minutes_90s', 'goals', 'assist','goals_assists','goals_pens','pens_made','pens_att' ,'cards_yellow', 'cards_red', 'xg',
+    'npxg', 'xg_assist','npxg_xg_assist',
     'progressive_carries', 'progressive_passes', 'progressive_passes_received', 'goals_per90',
-    'assists_per90', 'xg_per90', 'xg_assist_per90', 'gk_goals_against_per90', 'gk_save_pct',
-    'gk_clean_sheets_pct', 'gk_pens_save_pct', 'shots_on_target_pct', 'shots_on_target_per90',
-    'goals_per_shot', 'average_shot_distance', 'passes_completed', 'passes_pct', 'passes_total_distance',
-    'passes_pct_short', 'passes_pct_medium', 'passes_pct_long', 'assisted_shots',
+    'assists_per90','goals_assists_per90','goals_pens_per90','goals_assists_pens_per90', 'xg_per90', 'xg_assist_per90',
+    'xg_xg_assist_per90','npxg_per90','npxg_xg_assist_per90',
+
+    'minutes_per_game','minutes_pct','minutes_per_start','games_complete','games_subs','minutes_per_sub','unused_subs',
+    'points_per_game','on_goals_for','on_goals_against','plus_minus','plus_minus_per90','plus_minus_wowy','on_xg_for',
+    'on_xg_against','xg_plus_minus','xg_plus_minus_per90','xg_plus_minus_wowy',
+
+
+    'gk_goals_against','gk_goals_against_per90','gk_shots_on_target_against','gk_saves', 'gk_save_pct','gk_wins',
+    'gk_ties','gk_losses','gk_clean_sheets',''
+    'gk_clean_sheets_pct','gk_pens_att','gk_pens_allowed','gk_pens_saved','gk_pens_missed', 'gk_pens_save_pct',
+
+    'gk_free_kick_goals_against','gk_corner_kick_goals_against','gk_own_goals_against','gk_psxg',
+    'gk_psnpxg_per_shot_on_target_against','gk_psxg_net','gk_psxg_net_per90','gk_passes_completed_launched',
+    'gk_passes_launched','gk_passes_pct_launched','gk_passes','gk_passes_throws','gk_pct_passes_launched','gk_passes_length_avg',
+    'gk_goal_kicks','gk_pct_goal_kicks_launched','gk_goal_kick_length_avg','gk_crosses','gk_crosses_stopped','gk_crosses_stopped_pct',
+    'gk_def_actions_outside_pen_area','gk_def_actions_outside_pen_area_per90','gk_avg_distance_def_actions',
+     
+    'shots','shots_on_target','shots_on_target_pct','shots_per90', 'shots_on_target_per90',
+    'goals_per_shot','goals_per_shot_on_target', 'average_shot_distance','shots_free_kicks','npxg_per_shot','xg_net','npxg_net',
+ 
+    'passes_completed','passes', 'passes_pct', 'passes_total_distance','passes_progressive_distance','passes_completed_short',
+    'passes_short','passes_pct_short','passes_completed_medium','passes_medium', 'passes_pct_medium','passes_completed_long',
+    'passes_long','passes_pct_long','pass_xa','xg_assist_net', 'assisted_shots',
     'passes_into_final_third', 'passes_into_penalty_area', 'crosses_into_penalty_area',
-    'sca', 'sca_per90', 'gca', 'gca_per90', 'tackles', 'tackles_won', 'challenges',
-    'challenges_lost', 'blocks', 'blocked_shots', 'blocked_passes', 'interceptions', 'touches',
-    'touches_def_pen_area', 'touches_def_3rd', 'touches_mid_3rd', 'touches_att_3rd',
-    'touches_att_pen_area', 'take_ons', 'take_ons_won_pct', 'take_ons_tackled_pct', 'carries',
-    'carries_progressive_distance', 'carries_into_final_third', 'carries_into_penalty_area', 'miscontrols',
-    'dispossessed', 'passes_received', 'fouls', 'fouled', 'offsides', 'crosses',
+
+    'passes_live','passes_dead','passes_free_kicks','through_balls','passes_switches','throw_ins','corner_kicks','corner_kicks_in',
+    'corner_kicks_out','corner_kicks_straight','passes_offsides','passes_blocked',
+
+    'sca', 'sca_per90','sca_passes_live','sca_passes_dead','sca_take_ons','sca_shots','sca_fouled','sca_defense', 'gca', 
+    'gca_per90', 'gca_passes_live','gca_passes_dead','gca_take_ons','gca_shots','gca_fouled','gca_defense',
+    
+    'tackles', 'tackles_won','tackles_def_3rd','tackles_mid_3rd','tackles_att_3rd','challenge_tackles', 'challenges',
+    'challenge_tackles_pct','challenges_lost', 'blocks', 'blocked_shots', 'blocked_passes', 'interceptions',
+    'tackles_interceptions','clearances','errors',
+    
+    
+    
+    'touches','touches_def_pen_area', 'touches_def_3rd', 'touches_mid_3rd', 'touches_att_3rd',
+    'touches_att_pen_area','touches_live_ball', 'take_ons','take_ons_won', 'take_ons_won_pct','take_ons_tackled',
+    'take_ons_tackled_pct', 'carries','carries_distance',
+    'carries_progressive_distance','carries_into_final_third',
+    'carries_into_penalty_area', 'miscontrols',
+    'dispossessed', 'passes_received',
+    
+    'fouls', 'fouled', 'offsides', 'crosses','pens_won','pens_conceded','own_goals',
     'ball_recoveries', 'aerials_won', 'aerials_lost', 'aerials_won_pct'
 ]
 
@@ -221,14 +271,28 @@ def scrape_standard_stats():
                 position = row.find('td', attrs={'data-stat': 'position'}).text.strip()
                 team = row.find('td', attrs={'data-stat': 'team'}).text.strip()
                 age = row.find('td', attrs={'data-stat': 'age'}).text.strip()
+                birth_year = row.find('td', attrs={'data-stat': 'birth_year'}).text.strip()
                 games = row.find('td', attrs={'data-stat': 'games'}).text.strip()
                 games_starts = row.find('td', attrs={'data-stat': 'games_starts'}).text.strip()
                 minutes_str = row.find('td', attrs={'data-stat': 'minutes'}).text.strip()
+                minutes_90s = row.find('td', attrs={'data-stat': 'minutes_90s'}).text.strip()
                 goals = row.find('td', attrs={'data-stat': 'goals'}).text.strip()
                 assist = row.find('td', attrs={'data-stat': 'assists'}).text.strip()
+                goals_assists = row.find('td', attrs={'data-stat': 'goals_assists'}).text.strip()
+                goals_pens = row.find('td', attrs={'data-stat': 'goals_pens'}).text.strip()
+                pens_made = row.find('td', attrs={'data-stat': 'pens_made'}).text.strip()
+                pens_att = row.find('td', attrs={'data-stat': 'pens_att'}).text.strip()
                 cards_yellow = row.find('td', attrs={'data-stat': 'cards_yellow'}).text.strip()
                 cards_red = row.find('td', attrs={'data-stat': 'cards_red'}).text.strip()
                 xg = row.find('td', attrs={'data-stat': 'xg'}).text.strip()
+                npxg = row.find('td', attrs={'data-stat': 'npxg'}).text.strip()
+                npxg_xg_assist = row.find('td', attrs={'data-stat': 'npxg_xg_assist'}).text.strip()
+                goals_assists_per90 = row.find('td', attrs={'data-stat': 'goals_assists_per90'}).text.strip()
+                goals_pens_per90 = row.find('td', attrs={'data-stat': 'goals_pens_per90'}).text.strip()
+                goals_assists_pens_per90 = row.find('td', attrs={'data-stat': 'goals_assists_pens_per90'}).text.strip()
+                xg_xg_assist_per90 = row.find('td', attrs={'data-stat': 'xg_xg_assist_per90'}).text.strip()
+                npxg_per90 = row.find('td', attrs={'data-stat': 'npxg_per90'}).text.strip()
+                npxg_xg_assist_per90 = row.find('td', attrs={'data-stat': 'npxg_xg_assist_per90'}).text.strip()
                 xg_assist = row.find('td', attrs={'data-stat': 'xg_assist'}).text.strip()
                 progressive_carries = row.find('td', attrs={'data-stat': 'progressive_carries'}).text.strip()
                 progressive_passes = row.find('td', attrs={'data-stat': 'progressive_passes'}).text.strip()
@@ -240,16 +304,31 @@ def scrape_standard_stats():
 
                 player_data = initialize_player_dict()
                 player_data.update({
+                    'npxg':npxg,
+                    'npxg_per90':npxg_per90,
+                    'npxg_xg_assist':npxg_xg_assist,
+                    'goals_assists':goals_assists,
+                    'goals_assists_pens_per90':goals_assists_pens_per90,
+                    'goals_assists_per90':goals_assists_per90,
+                    'npxg_xg_assist_per90':npxg_xg_assist_per90,
+                    'goals_pens_per90':goals_pens_per90,
+                    'xg_xg_assist_per90':xg_xg_assist_per90,
                     'name': name,
                     'nationality': nationality,
                     'position': position,
                     'team': team,
                     'age': age,
+                    'born': birth_year,
                     'games': games,
                     'games_starts': games_starts,
                     'minutes': minutes_str,
+                    'minutes_90s': minutes_90s,
                     'goals': goals,
+                    'pens_made':pens_made,
+                    'pens_att':pens_att,
                     'assist': assist,
+                    'goals_assists': goals_assists,
+                    'goals_pens': goals_pens,
                     'cards_yellow': cards_yellow,
                     'cards_red': cards_red,
                     'xg': xg,
@@ -310,7 +389,19 @@ def update_goalkeeping_stats(player_set):
                         'gk_goals_against_per90': row.find('td', attrs={'data-stat': 'gk_goals_against_per90'}).text.strip(),
                         'gk_save_pct': row.find('td', attrs={'data-stat': 'gk_save_pct'}).text.strip(),
                         'gk_clean_sheets_pct': row.find('td', attrs={'data-stat': 'gk_clean_sheets_pct'}).text.strip(),
-                        'gk_pens_save_pct': row.find('td', attrs={'data-stat': 'gk_pens_save_pct'}).text.strip()
+                        'gk_pens_save_pct': row.find('td', attrs={'data-stat': 'gk_pens_save_pct'}).text.strip(),
+
+                        'gk_goals_against':row.find('td', attrs={'data-stat': 'gk_goals_against'}).text.strip(),
+                        'gk_shots_on_target_against':row.find('td', attrs={'data-stat': 'gk_shots_on_target_against'}).text.strip(),
+                        'gk_saves':row.find('td', attrs={'data-stat': 'gk_saves'}).text.strip(),
+                        'gk_wins':row.find('td', attrs={'data-stat': 'gk_wins'}).text.strip(),
+                         'gk_ties':row.find('td', attrs={'data-stat': 'gk_ties'}).text.strip(),
+                         'gk_losses':row.find('td', attrs={'data-stat': 'gk_losses'}).text.strip(),
+                         'gk_clean_sheets':row.find('td', attrs={'data-stat': 'gk_clean_sheets'}).text.strip(),
+                        'gk_pens_att':row.find('td', attrs={'data-stat': 'gk_pens_att'}).text.strip(),
+                        'gk_pens_allowed':row.find('td', attrs={'data-stat': 'gk_pens_allowed'}).text.strip(),
+                        'gk_pens_saved':row.find('td', attrs={'data-stat': 'gk_pens_saved'}).text.strip(),
+                        'gk_pens_missed':row.find('td', attrs={'data-stat': 'gk_pens_missed'}).text.strip()
                     })
             except Exception as e:
                 print(f"Error processing goalkeeping row: {e}")
@@ -347,10 +438,18 @@ def update_shooting_stats(player_set):
 
                 if player_key in player_set:
                     player_set[player_key].update({
+                        'shots':row.find('td', attrs={'data-stat': 'shots'}).text.strip(),
+                        'shots_on_target':row.find('td', attrs={'data-stat': 'shots_on_target'}).text.strip(),
+                        'shots_per90':row.find('td', attrs={'data-stat': 'shots_per90'}).text.strip(),
+                        'goals_per_shot_on_target':row.find('td', attrs={'data-stat': 'goals_per_shot_on_target'}).text.strip(), 
+                        'average_shot_distance':row.find('td', attrs={'data-stat': 'average_shot_distance'}).text.strip(),
+                        'shots_free_kicks':row.find('td', attrs={'data-stat': 'shots_free_kicks'}).text.strip(),
+                        'npxg_per_shot':row.find('td', attrs={'data-stat': 'npxg_per_shot'}).text.strip(),
+                        'xg_net':row.find('td', attrs={'data-stat': 'xg_net'}).text.strip(),
+                        'npxg_net':row.find('td', attrs={'data-stat': 'npxg_net'}).text.strip(),
                         'shots_on_target_pct': row.find('td', attrs={'data-stat': 'shots_on_target_pct'}).text.strip(),
                         'shots_on_target_per90': row.find('td', attrs={'data-stat': 'shots_on_target_per90'}).text.strip(),
                         'goals_per_shot': row.find('td', attrs={'data-stat': 'goals_per_shot'}).text.strip(),
-                        'average_shot_distance': row.find('td', attrs={'data-stat': 'average_shot_distance'}).text.strip()
                     })
             except Exception as e:
                 print(f"Error processing shooting row: {e}")
@@ -387,6 +486,18 @@ def update_passing_stats(player_set):
 
                 if player_key in player_set:
                     player_set[player_key].update({
+                        'passes':row.find('td', attrs={'data-stat': 'passes'}).text.strip(),
+                        'passes_progressive_distance':row.find('td', attrs={'data-stat': 'passes_progressive_distance'}).text.strip(),
+                        'passes_completed_short':row.find('td', attrs={'data-stat': 'passes_completed_short'}).text.strip(),
+                        'passes_short':row.find('td', attrs={'data-stat': 'passes_short'}).text.strip(),
+                        'passes_completed_medium':row.find('td', attrs={'data-stat': 'passes_completed_medium'}).text.strip(),
+                        'passes_medium':row.find('td', attrs={'data-stat': 'passes_medium'}).text.strip(),
+                        'passes_completed_long':row.find('td', attrs={'data-stat': 'passes_completed_long'}).text.strip(),
+                        'passes_long':row.find('td', attrs={'data-stat': 'passes_long'}).text.strip(),
+                        'pass_xa':row.find('td', attrs={'data-stat': 'pass_xa'}).text.strip(),
+                        'xg_assist_net':row.find('td', attrs={'data-stat': 'xg_assist_net'}).text.strip(),
+   
+
                         'passes_completed': row.find('td', attrs={'data-stat': 'passes_completed'}).text.strip(),
                         'passes_pct': row.find('td', attrs={'data-stat': 'passes_pct'}).text.strip(),
                         'passes_total_distance': row.find('td', attrs={'data-stat': 'passes_total_distance'}).text.strip(),
@@ -434,6 +545,18 @@ def update_goal_shot_creation_stats(player_set):
 
                 if player_key in player_set:
                     player_set[player_key].update({
+                        'sca_passes_live':row.find('td', attrs={'data-stat': 'sca_passes_live'}).text.strip(),
+                        'sca_passes_dead':row.find('td', attrs={'data-stat': 'sca_passes_dead'}).text.strip(),
+                        'sca_take_ons':row.find('td', attrs={'data-stat': 'sca_take_ons'}).text.strip(),
+                        'sca_shots':row.find('td', attrs={'data-stat': 'sca_shots'}).text.strip(),
+                        'sca_fouled':row.find('td', attrs={'data-stat': 'sca_fouled'}).text.strip(),
+                        'sca_defense':row.find('td', attrs={'data-stat': 'sca_defense'}).text.strip(),
+                        'gca_passes_live':row.find('td', attrs={'data-stat': 'gca_passes_live'}).text.strip(),
+                        'gca_passes_dead':row.find('td', attrs={'data-stat': 'gca_passes_dead'}).text.strip(),
+                        'gca_take_ons':row.find('td', attrs={'data-stat': 'gca_take_ons'}).text.strip(),
+                        'gca_shots':row.find('td', attrs={'data-stat': 'gca_shots'}).text.strip(),
+                        'gca_fouled':row.find('td', attrs={'data-stat': 'gca_fouled'}).text.strip(),
+                        'gca_defense':row.find('td', attrs={'data-stat': 'gca_defense'}).text.strip(),
                         'sca': row.find('td', attrs={'data-stat': 'sca'}).text.strip(),
                         'sca_per90': row.find('td', attrs={'data-stat': 'sca_per90'}).text.strip(),
                         'gca': row.find('td', attrs={'data-stat': 'gca'}).text.strip(),
@@ -474,6 +597,15 @@ def update_defensive_stats(player_set):
 
                 if player_key in player_set:
                     player_set[player_key].update({
+                        'tackles_def_3rd':row.find('td', attrs={'data-stat': 'tackles_def_3rd'}).text.strip(),
+                        'tackles_mid_3rd':row.find('td', attrs={'data-stat': 'tackles_mid_3rd'}).text.strip(),
+                        'tackles_att_3rd':row.find('td', attrs={'data-stat': 'tackles_att_3rd'}).text.strip(),
+                        'challenge_tackles':row.find('td', attrs={'data-stat': 'challenge_tackles'}).text.strip(),
+                        'challenge_tackles_pct':row.find('td', attrs={'data-stat': 'challenge_tackles_pct'}).text.strip(),
+                        'tackles_interceptions':row.find('td', attrs={'data-stat': 'tackles_interceptions'}).text.strip(),
+                        'clearances':row.find('td', attrs={'data-stat': 'clearances'}).text.strip(),
+                        'errors':row.find('td', attrs={'data-stat': 'errors'}).text.strip(),
+
                         'tackles': row.find('td', attrs={'data-stat': 'tackles'}).text.strip(),
                         'tackles_won': row.find('td', attrs={'data-stat': 'tackles_won'}).text.strip(),
                         'challenges': row.find('td', attrs={'data-stat': 'challenges'}).text.strip(),
@@ -533,7 +665,12 @@ def update_possession_stats(player_set):
                         'carries_into_penalty_area': row.find('td', attrs={'data-stat': 'carries_into_penalty_area'}).text.strip(),
                         'miscontrols': row.find('td', attrs={'data-stat': 'miscontrols'}).text.strip(),
                         'dispossessed': row.find('td', attrs={'data-stat': 'dispossessed'}).text.strip(),
-                        'passes_received': row.find('td', attrs={'data-stat': 'passes_received'}).text.strip()
+                        'passes_received': row.find('td', attrs={'data-stat': 'passes_received'}).text.strip(),
+                        'touches_live_ball':row.find('td', attrs={'data-stat': 'touches_live_ball'}).text.strip(),
+                        'take_ons_won':row.find('td', attrs={'data-stat': 'take_ons_won'}).text.strip(),
+                        'take_ons_tackled':row.find('td', attrs={'data-stat': 'take_ons_tackled'}).text.strip(),
+                        'carries_distance':row.find('td', attrs={'data-stat': 'carries_distance'}).text.strip(),
+                        'progressive_passes_received':row.find('td', attrs={'data-stat': 'progressive_passes_received'}).text.strip()
                     })
             except Exception as e:
                 print(f"Error processing possession row: {e}")
@@ -577,10 +714,164 @@ def update_miscellaneous_stats(player_set):
                         'ball_recoveries': row.find('td', attrs={'data-stat': 'ball_recoveries'}).text.strip(),
                         'aerials_won': row.find('td', attrs={'data-stat': 'aerials_won'}).text.strip(),
                         'aerials_lost': row.find('td', attrs={'data-stat': 'aerials_lost'}).text.strip(),
-                        'aerials_won_pct': row.find('td', attrs={'data-stat': 'aerials_won_pct'}).text.strip()
+                        'aerials_won_pct': row.find('td', attrs={'data-stat': 'aerials_won_pct'}).text.strip(),
+                        'pens_won':row.find('td', attrs={'data-stat': 'pens_won'}).text.strip(),
+                        'pens_conceded':row.find('td', attrs={'data-stat': 'pens_conceded'}).text.strip(),
+                        'own_goals':row.find('td', attrs={'data-stat': 'own_goals'}).text.strip()
                     })
             except Exception as e:
                 print(f"Error processing miscellaneous row: {e}")
+                continue
+
+    finally:
+        driver.quit()
+def update_playing_time_stats(player_set):
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    driver.implicitly_wait(10)
+    try:
+        url = LINKS_URL_TO_CRAWL['Playing Time'][0]
+        driver.get(url)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, LINKS_URL_TO_CRAWL['Playing Time'][1])))
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, 'html.parser')
+        table = soup.find('table', attrs={'id': LINKS_URL_TO_CRAWL['Playing Time'][1]})
+
+        if not table:
+            print("Error: Could not find the 'Playing Time' table.")
+            return
+
+        rows = table.find_all('tr', attrs={'data-row': True})
+
+        for row in rows:
+            try:
+                name = row.find('td', attrs={'data-stat': 'player'}).text.strip()
+                team = row.find('td', attrs={'data-stat': 'team'}).text.strip()
+                player_key = str(name) + str(team)
+
+                if player_key in player_set:
+                    player_set[player_key].update({
+                        'minutes_per_game':row.find('td', attrs={'data-stat': 'minutes_per_game'}).text.strip(),
+                        'minutes_pct':row.find('td', attrs={'data-stat': 'minutes_pct'}).text.strip(),
+                        'minutes_per_start':row.find('td', attrs={'data-stat': 'minutes_per_start'}).text.strip(),
+                        'games_complete':row.find('td', attrs={'data-stat': 'games_complete'}).text.strip(),
+                        'games_subs':row.find('td', attrs={'data-stat': 'games_subs'}).text.strip(),
+                        'minutes_per_sub':row.find('td', attrs={'data-stat': 'minutes_per_sub'}).text.strip(),
+                        'unused_subs':row.find('td', attrs={'data-stat': 'unused_subs'}).text.strip(),
+                        'points_per_game':row.find('td', attrs={'data-stat': 'points_per_game'}).text.strip(),
+                        'on_goals_for':row.find('td', attrs={'data-stat': 'on_goals_for'}).text.strip(),
+                        'on_goals_against':row.find('td', attrs={'data-stat': 'on_goals_against'}).text.strip(),
+                        'plus_minus':row.find('td', attrs={'data-stat': 'plus_minus'}).text.strip(),
+                        'plus_minus_per90':row.find('td', attrs={'data-stat': 'plus_minus_per90'}).text.strip(),
+                        'plus_minus_wowy':row.find('td', attrs={'data-stat': 'plus_minus_wowy'}).text.strip(),
+                        'on_xg_for':row.find('td', attrs={'data-stat': 'on_xg_for'}).text.strip(),
+                        'on_xg_against':row.find('td', attrs={'data-stat': 'on_xg_against'}).text.strip(),
+                        'xg_plus_minus':row.find('td', attrs={'data-stat': 'xg_plus_minus'}).text.strip(),
+                        'xg_plus_minus_per90':row.find('td', attrs={'data-stat': 'xg_plus_minus_per90'}).text.strip(),
+                        'xg_plus_minus_wowy':row.find('td', attrs={'data-stat': 'xg_plus_minus_wowy'}).text.strip()
+                    })
+            except Exception as e:
+                print(f"Error processing playing time row: {e}")
+                continue
+
+    finally:
+        driver.quit()
+def update_passing_type_stats(player_set):
+ 
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    driver.implicitly_wait(10)
+    try:
+        url = LINKS_URL_TO_CRAWL['Passing Type'][0]
+        driver.get(url)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, LINKS_URL_TO_CRAWL['Passing Type'][1])))
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, 'html.parser')
+        table = soup.find('table', attrs={'id': LINKS_URL_TO_CRAWL['Passing Type'][1]})
+
+        if not table:
+            print("Error: Could not find the 'Passing Type' table.")
+            return
+
+        rows = table.find_all('tr', attrs={'data-row': True})
+
+        for row in rows:
+            try:
+                name = row.find('td', attrs={'data-stat': 'player'}).text.strip()
+                team = row.find('td', attrs={'data-stat': 'team'}).text.strip()
+                player_key = str(name) + str(team)
+
+                if player_key in player_set:
+                    player_set[player_key].update({
+                        'passes_live':row.find('td', attrs={'data-stat': 'passes_live'}).text.strip(),
+                        'passes_dead':row.find('td', attrs={'data-stat': 'passes_dead'}).text.strip(),
+                        'passes_free_kicks':row.find('td', attrs={'data-stat': 'passes_free_kicks'}).text.strip(),
+                        'through_balls':row.find('td', attrs={'data-stat': 'through_balls'}).text.strip(),
+                        'passes_switches':row.find('td', attrs={'data-stat': 'passes_switches'}).text.strip(),
+                        'throw_ins':row.find('td', attrs={'data-stat': 'throw_ins'}).text.strip(),
+                        'corner_kicks':row.find('td', attrs={'data-stat': 'corner_kicks'}).text.strip(),
+                        'corner_kicks_in':row.find('td', attrs={'data-stat': 'corner_kicks_in'}).text.strip(),
+                        'corner_kicks_out':row.find('td', attrs={'data-stat': 'corner_kicks_out'}).text.strip(),
+                        'corner_kicks_straight':row.find('td', attrs={'data-stat': 'corner_kicks_straight'}).text.strip(),
+                        'passes_offsides':row.find('td', attrs={'data-stat': 'passes_offsides'}).text.strip(),
+                        'passes_blocked':row.find('td', attrs={'data-stat': 'passes_blocked'}).text.strip()
+                    })
+            except Exception as e:
+                print(f"Error processing Passing Type row: {e}")
+                continue
+
+    finally:
+        driver.quit()
+def update_advanced_goalkeeper_stats(player_set):
+  
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    driver.implicitly_wait(10)
+    try:
+        url = LINKS_URL_TO_CRAWL['Advanced Goalkeeping'][0]
+        driver.get(url)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, LINKS_URL_TO_CRAWL['Advanced Goalkeeping'][1])))
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, 'html.parser')
+        table = soup.find('table', attrs={'id': LINKS_URL_TO_CRAWL['Advanced Goalkeeping'][1]})
+
+        if not table:
+            print("Error: Could not find the 'Advanced Goalkeeping' table.")
+            return
+
+        rows = table.find_all('tr', attrs={'data-row': True})
+
+        for row in rows:
+            try:
+                name = row.find('td', attrs={'data-stat': 'player'}).text.strip()
+                team = row.find('td', attrs={'data-stat': 'team'}).text.strip()
+                player_key = str(name) + str(team)
+
+                if player_key in player_set:
+                    player_set[player_key].update({
+                        'gk_free_kick_goals_against': row.find('td', attrs={'data-stat': 'gk_free_kick_goals_against'}).text.strip(),
+                        'gk_corner_kick_goals_against': row.find('td', attrs={'data-stat': 'gk_corner_kick_goals_against'}).text.strip(),
+                        'gk_own_goals_against': row.find('td', attrs={'data-stat': 'gk_own_goals_against'}).text.strip(),
+                        'gk_psxg': row.find('td', attrs={'data-stat': 'gk_psxg'}).text.strip(),
+                        'gk_psnpxg_per_shot_on_target_against': row.find('td', attrs={'data-stat': 'gk_psnpxg_per_shot_on_target_against'}).text.strip(),
+                        'gk_psxg_net': row.find('td', attrs={'data-stat': 'gk_psxg_net'}).text.strip(),
+                        'gk_psxg_net_per90': row.find('td', attrs={'data-stat': 'gk_psxg_net_per90'}).text.strip(),
+                        'gk_passes_completed_launched': row.find('td', attrs={'data-stat': 'gk_passes_completed_launched'}).text.strip(),
+                        'gk_passes_launched': row.find('td', attrs={'data-stat': 'gk_passes_launched'}).text.strip(),
+                        'gk_passes_pct_launched': row.find('td', attrs={'data-stat': 'gk_passes_pct_launched'}).text.strip(),
+                        'gk_passes': row.find('td', attrs={'data-stat': 'gk_passes'}).text.strip(),
+                        'gk_passes_throws': row.find('td', attrs={'data-stat': 'gk_passes_throws'}).text.strip(),
+                        'gk_pct_passes_launched': row.find('td', attrs={'data-stat': 'gk_pct_passes_launched'}).text.strip(),
+                        'gk_passes_length_avg': row.find('td', attrs={'data-stat': 'gk_passes_length_avg'}).text.strip(),
+                        'gk_goal_kicks': row.find('td', attrs={'data-stat': 'gk_goal_kicks'}).text.strip(),
+                        'gk_pct_goal_kicks_launched': row.find('td', attrs={'data-stat': 'gk_pct_goal_kicks_launched'}).text.strip(),
+                        'gk_goal_kick_length_avg': row.find('td', attrs={'data-stat': 'gk_goal_kick_length_avg'}).text.strip(),
+                        'gk_crosses': row.find('td', attrs={'data-stat': 'gk_crosses'}).text.strip(),
+                        'gk_crosses_stopped': row.find('td', attrs={'data-stat': 'gk_crosses_stopped'}).text.strip(),
+                        'gk_crosses_stopped_pct': row.find('td', attrs={'data-stat': 'gk_crosses_stopped_pct'}).text.strip(),
+                        'gk_def_actions_outside_pen_area': row.find('td', attrs={'data-stat': 'gk_def_actions_outside_pen_area'}).text.strip(),
+                        'gk_def_actions_outside_pen_area_per90': row.find('td', attrs={'data-stat': 'gk_def_actions_outside_pen_area_per90'}).text.strip(),
+                        'gk_avg_distance_def_actions': row.find('td', attrs={'data-stat': 'gk_avg_distance_def_actions'}).text.strip(),
+                    })
+            except Exception as e:
+                print(f"Error processing Advanced Goalkeeping row: {e}")
                 continue
 
     finally:
@@ -597,19 +888,30 @@ def format_player_data(player_dict):
     """Format player data into a list for export in correct order.
     Định dạng dữ liệu cầu thủ thành danh sách để xuất theo thứ tự đúng."""
     export_order_keys = [
-        'name', 'nationality', 'team', 'position', 'age', 'games', 'games_starts', 'minutes', 'goals', 'assist',
-        'cards_yellow', 'cards_red', 'xg', 'xg_assist', 'progressive_carries', 'progressive_passes',
-        'progressive_passes_received', 'goals_per90', 'assists_per90', 'xg_per90', 'xg_assist_per90',
-        'gk_goals_against_per90', 'gk_save_pct', 'gk_clean_sheets_pct', 'gk_pens_save_pct', 'shots_on_target_pct',
-        'shots_on_target_per90', 'goals_per_shot', 'average_shot_distance', 'passes_completed', 'passes_pct',
-        'passes_total_distance', 'passes_pct_short', 'passes_pct_medium', 'passes_pct_long', 'assisted_shots',
-        'passes_into_final_third', 'passes_into_penalty_area', 'crosses_into_penalty_area', 'sca', 'sca_per90',
-        'gca', 'gca_per90', 'tackles', 'tackles_won', 'challenges', 'challenges_lost', 'blocks', 'blocked_shots',
-        'blocked_passes', 'interceptions', 'touches', 'touches_def_pen_area', 'touches_def_3rd', 'touches_mid_3rd',
-        'touches_att_3rd', 'touches_att_pen_area', 'take_ons', 'take_ons_won_pct', 'take_ons_tackled_pct', 'carries',
-        'carries_progressive_distance', 'carries_into_final_third', 'carries_into_penalty_area', 'miscontrols',
-        'dispossessed', 'passes_received', 'fouls', 'fouled', 'offsides', 'crosses', 'ball_recoveries', 'aerials_won',
-        'aerials_lost', 'aerials_won_pct'
+    'name', 'nationality', 'position', 'team', 'age','born', 'games', 'games_starts',
+    'minutes','minutes_90s', 'goals', 'assist','goals_assists','goals_pens','pens_made','pens_att' ,'cards_yellow', 'cards_red', 'xg',
+    'npxg', 'xg_assist','npxg_xg_assist',
+    'progressive_carries', 'progressive_passes', 'progressive_passes_received', 'goals_per90',
+    'assists_per90','goals_assists_per90','goals_pens_per90','goals_assists_pens_per90', 'xg_per90', 'xg_assist_per90',
+    'xg_xg_assist_per90','npxg_per90','npxg_xg_assist_per90',
+
+    'gk_goals_against','gk_goals_against_per90','gk_shots_on_target_against','gk_saves', 'gk_save_pct','gk_wins',
+    'gk_ties','gk_losses','gk_clean_sheets',''
+    'gk_clean_sheets_pct','gk_pens_att','gk_pens_allowed','gk_pens_saved','gk_pens_missed', 'gk_pens_save_pct',
+     
+    'shots','shots_on_target','shots_on_target_pct','shots_per90', 'shots_on_target_per90',
+    'goals_per_shot','goals_per_shot_on_target', 'average_shot_distance','shots_free_kicks','npxg_per_shot','xg_net','npxg_net',
+ 
+    'passes_completed', 'passes_pct', 'passes_total_distance',
+    'passes_pct_short', 'passes_pct_medium', 'passes_pct_long', 'assisted_shots',
+    'passes_into_final_third', 'passes_into_penalty_area', 'crosses_into_penalty_area',
+    'sca', 'sca_per90', 'gca', 'gca_per90', 'tackles', 'tackles_won', 'challenges',
+    'challenges_lost', 'blocks', 'blocked_shots', 'blocked_passes', 'interceptions', 'touches',
+    'touches_def_pen_area', 'touches_def_3rd', 'touches_mid_3rd', 'touches_att_3rd',
+    'touches_att_pen_area', 'take_ons', 'take_ons_won_pct', 'take_ons_tackled_pct', 'carries',
+    'carries_progressive_distance', 'carries_into_final_third', 'carries_into_penalty_area', 'miscontrols',
+    'dispossessed', 'passes_received', 'fouls', 'fouled', 'offsides', 'crosses',
+    'ball_recoveries', 'aerials_won', 'aerials_lost', 'aerials_won_pct'
     ]
 
     nationality = player_dict.get('nationality', 'N/a')
@@ -618,7 +920,7 @@ def format_player_data(player_dict):
     age_processed = age.split('-')[0] if '-' in age else age
 
     exported_list = []
-    for key in export_order_keys:
+    for key in PLAYER_KEY_TO_CRAWL:
         if key == 'nationality':
             exported_list.append(nationality_processed)
         elif key == 'age':
@@ -632,7 +934,7 @@ def format_player_data(player_dict):
 import sqlite3
 import pandas as pd
 
-def export_to_csv_and_db(player_set_dict, db_path='premier_league_stats.db'):
+def export_to_csv_and_db(player_set_dict, db_path='cau_thu.db'):
     """Export player data to CSV and update all player info into SQLite DB."""
 
     playerlist = list(player_set_dict.values())
@@ -641,45 +943,56 @@ def export_to_csv_and_db(player_set_dict, db_path='premier_league_stats.db'):
 
     # Các tên cột đầy đủ (75 cột)
     export_order_keys = [
-        'name', 'nationality', 'team', 'position', 'age', 'games', 'games_starts', 'minutes', 'goals', 'assist',
-        'cards_yellow', 'cards_red', 'xg', 'xg_assist', 'progressive_carries', 'progressive_passes',
-        'progressive_passes_received', 'goals_per90', 'assists_per90', 'xg_per90', 'xg_assist_per90',
-        'gk_goals_against_per90', 'gk_save_pct', 'gk_clean_sheets_pct', 'gk_pens_save_pct', 'shots_on_target_pct',
-        'shots_on_target_per90', 'goals_per_shot', 'average_shot_distance', 'passes_completed', 'passes_pct',
-        'passes_total_distance', 'passes_pct_short', 'passes_pct_medium', 'passes_pct_long', 'assisted_shots',
-        'passes_into_final_third', 'passes_into_penalty_area', 'crosses_into_penalty_area', 'sca', 'sca_per90',
-        'gca', 'gca_per90', 'tackles', 'tackles_won', 'challenges', 'challenges_lost', 'blocks', 'blocked_shots',
-        'blocked_passes', 'interceptions', 'touches', 'touches_def_pen_area', 'touches_def_3rd', 'touches_mid_3rd',
-        'touches_att_3rd', 'touches_att_pen_area', 'take_ons', 'take_ons_won_pct', 'take_ons_tackled_pct', 'carries',
-        'carries_progressive_distance', 'carries_into_final_third', 'carries_into_penalty_area', 'miscontrols',
-        'dispossessed', 'passes_received', 'fouls', 'fouled', 'offsides', 'crosses', 'ball_recoveries', 'aerials_won',
-        'aerials_lost', 'aerials_won_pct'
+    'name', 'nationality', 'position', 'team', 'age','born', 'games', 'games_starts',
+    'minutes','minutes_90s', 'goals', 'assist','goals_assists','goals_pens','pens_made','pens_att' ,'cards_yellow', 'cards_red', 'xg',
+    'npxg', 'xg_assist','npxg_xg_assist',
+    'progressive_carries', 'progressive_passes', 'progressive_passes_received', 'goals_per90',
+    'assists_per90','goals_assists_per90','goals_pens_per90','goals_assists_pens_per90', 'xg_per90', 'xg_assist_per90',
+    'xg_xg_assist_per90','npxg_per90','npxg_xg_assist_per90',
+
+    'gk_goals_against','gk_goals_against_per90','gk_shots_on_target_against','gk_saves', 'gk_save_pct','gk_wins',
+    'gk_ties','gk_losses','gk_clean_sheets',''
+    'gk_clean_sheets_pct','gk_pens_att','gk_pens_allowed','gk_pens_saved','gk_pens_missed', 'gk_pens_save_pct',
+     
+    'shots','shots_on_target','shots_on_target_pct','shots_per90', 'shots_on_target_per90',
+    'goals_per_shot','goals_per_shot_on_target', 'average_shot_distance','shots_free_kicks','npxg_per_shot','xg_net','npxg_net',
+ 
+    'passes_completed', 'passes_pct', 'passes_total_distance',
+    'passes_pct_short', 'passes_pct_medium', 'passes_pct_long', 'assisted_shots',
+    'passes_into_final_third', 'passes_into_penalty_area', 'crosses_into_penalty_area',
+    'sca', 'sca_per90', 'gca', 'gca_per90', 'tackles', 'tackles_won', 'challenges',
+    'challenges_lost', 'blocks', 'blocked_shots', 'blocked_passes', 'interceptions', 'touches',
+    'touches_def_pen_area', 'touches_def_3rd', 'touches_mid_3rd', 'touches_att_3rd',
+    'touches_att_pen_area', 'take_ons', 'take_ons_won_pct', 'take_ons_tackled_pct', 'carries',
+    'carries_progressive_distance', 'carries_into_final_third', 'carries_into_penalty_area', 'miscontrols',
+    'dispossessed', 'passes_received', 'fouls', 'fouled', 'offsides', 'crosses',
+    'ball_recoveries', 'aerials_won', 'aerials_lost', 'aerials_won_pct'
     ]
 
-    column_names = [  # Tên cột cho CSV, bạn có thể giữ nguyên như cũ hoặc rút gọn
-        'Name', 'Nation', 'Team', 'Position', 'Age', 'Matches Played', 'Starts', 'Minutes', 'Goals', 'Assists',
-        'Yellow Cards', 'Red Cards', 'Expected Goals (xG)', 'Expected Assist Goals (xAG)', 'Progressive Carries (PrgC)',
-        'Progressive Passes (PrgP)', 'Progressive Passes Received (PrgR)', 'Goals per 90', 'Assists per 90',
-        'xG per 90', 'xAG per 90', 'Goals Against per 90 (GA90)', 'Save Percentage (Save%)', 'Clean Sheets Percentage (CS%)',
-        'Penalty Kicks Save Percentage', 'Shots on Target Percentage (SoT%)', 'Shots on Target per 90 (SoT/90)',
-        'Goals per Shot (G/Sh)', 'Average Shot Distance (Dist)', 'Passes Completed (Cmp)', 'Pass Completion Percentage (Cmp%)',
-        'Total Passing Distance (TotDist)', 'Short Pass Completion Percentage', 'Medium Pass Completion Percentage',
-        'Long Pass Completion Percentage', 'Key Passes (KP)', 'Passes into Final Third (1/3)', 'Passes into Penalty Area (PPA)',
-        'Crosses into Penalty Area (CrsPA)', 'Shot-Creating Actions (SCA)', 'SCA per 90', 'Goal-Creating Actions (GCA)',
-        'GCA per 90', 'Tackles (Tkl)', 'Tackles Won (TklW)', 'Challenges (Tkl)', 'Challenges Lost (TklD)', 'Blocks',
-        'Blocked Shots (Sh)', 'Blocked Passes (Pass)', 'Interceptions (Int)', 'Touches', 'Touches in Defensive Penalty Area',
-        'Touches in Defensive Third', 'Touches in Middle Third', 'Touches in Attacking Third', 'Touches in Attacking Penalty Area',
-        'Take-Ons (Att)', 'Take-On Success Percentage (Succ%)', 'Take-On Tackled Percentage (Tkl%)', 'Carries',
-        'Progressive Carrying Distance (TotDist)', 'Carries into Final Third (1/3)', 'Carries into Penalty Area (CPA)',
-        'Miscontrols (Mis)', 'Dispossessed (Dis)', 'Passes Received (Rec)', 'Fouls Committed (Fls)', 'Fouls Drawn (Fld)',
-        'Offsides (Off)', 'Crosses (Crs)', 'Ball Recoveries (Recov)', 'Aerials Won (Won)', 'Aerials Lost (Lost)',
-        'Aerials Won Percentage (Won%)'
-    ]
+    # column_names = [  # Tên cột cho CSV, bạn có thể giữ nguyên như cũ hoặc rút gọn
+    #     'Name', 'Nation', 'Team', 'Position', 'Age', 'Matches Played', 'Starts', 'Minutes', 'Goals', 'Assists',
+    #     'Yellow Cards', 'Red Cards', 'Expected Goals (xG)', 'Expected Assist Goals (xAG)', 'Progressive Carries (PrgC)',
+    #     'Progressive Passes (PrgP)', 'Progressive Passes Received (PrgR)', 'Goals per 90', 'Assists per 90',
+    #     'xG per 90', 'xAG per 90', 'Goals Against per 90 (GA90)', 'Save Percentage (Save%)', 'Clean Sheets Percentage (CS%)',
+    #     'Penalty Kicks Save Percentage', 'Shots on Target Percentage (SoT%)', 'Shots on Target per 90 (SoT/90)',
+    #     'Goals per Shot (G/Sh)', 'Average Shot Distance (Dist)', 'Passes Completed (Cmp)', 'Pass Completion Percentage (Cmp%)',
+    #     'Total Passing Distance (TotDist)', 'Short Pass Completion Percentage', 'Medium Pass Completion Percentage',
+    #     'Long Pass Completion Percentage', 'Key Passes (KP)', 'Passes into Final Third (1/3)', 'Passes into Penalty Area (PPA)',
+    #     'Crosses into Penalty Area (CrsPA)', 'Shot-Creating Actions (SCA)', 'SCA per 90', 'Goal-Creating Actions (GCA)',
+    #     'GCA per 90', 'Tackles (Tkl)', 'Tackles Won (TklW)', 'Challenges (Tkl)', 'Challenges Lost (TklD)', 'Blocks',
+    #     'Blocked Shots (Sh)', 'Blocked Passes (Pass)', 'Interceptions (Int)', 'Touches', 'Touches in Defensive Penalty Area',
+    #     'Touches in Defensive Third', 'Touches in Middle Third', 'Touches in Attacking Third', 'Touches in Attacking Penalty Area',
+    #     'Take-Ons (Att)', 'Take-On Success Percentage (Succ%)', 'Take-On Tackled Percentage (Tkl%)', 'Carries',
+    #     'Progressive Carrying Distance (TotDist)', 'Carries into Final Third (1/3)', 'Carries into Penalty Area (CPA)',
+    #     'Miscontrols (Mis)', 'Dispossessed (Dis)', 'Passes Received (Rec)', 'Fouls Committed (Fls)', 'Fouls Drawn (Fld)',
+    #     'Offsides (Off)', 'Crosses (Crs)', 'Ball Recoveries (Recov)', 'Aerials Won (Won)', 'Aerials Lost (Lost)',
+    #     'Aerials Won Percentage (Won%)'
+    # ]
 
-    # 1. Xuất CSV
-    df = pd.DataFrame(result, columns=column_names)
-    df.to_csv("premier_league_player_stats.csv", index=False, encoding='utf-8')
-    print("✅ Data exported to CSV.")
+    # # 1. Xuất CSV
+    # df = pd.DataFrame(result, columns=column_names)
+    # df.to_csv("premier_league_player_stats.csv", index=False, encoding='utf-8')
+    # print("✅ Data exported to CSV.")
 
     # 2. Lưu vào SQLite
     conn = sqlite3.connect(db_path)
@@ -689,7 +1002,7 @@ def export_to_csv_and_db(player_set_dict, db_path='premier_league_stats.db'):
     create_table_sql = f"""
     CREATE TABLE IF NOT EXISTS players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        {', '.join([f"{col} TEXT" for col in export_order_keys])}
+        {', '.join([f"{col} TEXT" for col in PLAYER_KEY_TO_CRAWL])}
     );
     """
     cursor.execute(create_table_sql)
@@ -699,12 +1012,13 @@ def export_to_csv_and_db(player_set_dict, db_path='premier_league_stats.db'):
 
     # 5. Chèn toàn bộ dữ liệu
     insert_sql = f"""
-    INSERT INTO players ({', '.join(export_order_keys)})
-    VALUES ({', '.join(['?'] * len(export_order_keys))})
+    INSERT INTO players ({', '.join(PLAYER_KEY_TO_CRAWL)})
+    VALUES ({', '.join(['?'] * len(PLAYER_KEY_TO_CRAWL))})
     """
     cursor.executemany(insert_sql, result)
     conn.commit()
     conn.close()
+    print(f"✅ Dữ liệu đầy đủ đã được lưu vào bảng với {len(PLAYER_KEY_TO_CRAWL)} cột")
     print(f"✅ Dữ liệu đầy đủ đã được lưu vào bảng 'players' trong {db_path}")
 
 # -----------------------------------------
@@ -820,7 +1134,7 @@ def extract_page_data(browser, page_url):
 # ------------------------------
 # 🔹 CẬP NHẬT DỮ LIỆU VÀO DATABASE
 # ------------------------------
-def update_transfer_values_to_db(db_path='premier_league_stats.db'):
+def update_transfer_values_to_db(db_path='cau_thu.db'):
     all_players_raw = get_all_players_from_db(db_path)
 
     name_map = {}
@@ -906,9 +1220,12 @@ def main():
         return
 
     print("Updating player data with additional stats...")
+    update_playing_time_stats(player_set)
     update_goalkeeping_stats(player_set)
+    update_advanced_goalkeeper_stats(player_set)
     update_shooting_stats(player_set)
     update_passing_stats(player_set)
+    update_passing_type_stats(player_set)
     update_goal_shot_creation_stats(player_set)
     update_defensive_stats(player_set)
     update_possession_stats(player_set)
@@ -916,9 +1233,9 @@ def main():
 
     print("Exporting data to CSV...")
     export_to_csv_and_db(player_set)
-    # export_to_sqlite(player_set)
+    # # export_to_sqlite(player_set)
     print("💰 Thu thập và lưu giá trị chuyển nhượng...")
-    update_transfer_values_to_db("premier_league_stats.db")
+    update_transfer_values_to_db("cau_thu.db")
 
 # -----------------------------------------
 if __name__ == "__main__":
